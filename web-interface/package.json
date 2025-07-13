@@ -1,0 +1,47 @@
+{
+  "name": "duckmuxpeg-matrix-interface",
+  "version": "1.0.0",
+  "description": "Hyper-modern interface with advanced matrix mapping layers for DuckMuxPeg 2025",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.158.0",
+    "@react-three/fiber": "^8.15.11",
+    "@react-three/drei": "^9.88.13",
+    "framer-motion": "^10.16.12",
+    "gl-matrix": "^3.4.3",
+    "lodash": "^4.17.21",
+    "socket.io-client": "^4.7.4",
+    "react-router-dom": "^6.20.1",
+    "zustand": "^4.4.6",
+    "react-spring": "^9.7.3",
+    "d3": "^7.8.5",
+    "styled-components": "^6.1.1",
+    "react-virtualized": "^9.22.5",
+    "react-grid-layout": "^1.4.4",
+    "react-resizable": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@types/three": "^0.158.0",
+    "@types/lodash": "^4.14.202",
+    "@types/d3": "^7.4.3",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-react": "^4.1.1",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0",
+    "sass": "^1.69.5"
+  }
+}
