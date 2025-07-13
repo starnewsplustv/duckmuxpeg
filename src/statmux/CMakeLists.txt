@@ -1,0 +1,23 @@
+add_library(statmux_engine STATIC
+    StatMuxEngine.cpp
+    InputHandler.cpp
+    OutputHandler.cpp
+    BitrateController.cpp
+    StreamProcessor.cpp
+    QualityAnalyzer.cpp
+    TransportStream.cpp
+)
+
+target_include_directories(statmux_engine PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/src/common
+)
+
+target_link_libraries(statmux_engine
+    common_utils
+    ${LIBAV_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+target_compile_options(statmux_engine PRIVATE ${LIBAV_CFLAGS_OTHER})
+target_link_directories(statmux_engine PRIVATE ${LIBAV_LIBRARY_DIRS})
