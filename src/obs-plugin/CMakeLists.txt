@@ -14,6 +14,9 @@ target_include_directories(obs-duckmuxpeg-plugin PUBLIC
 target_link_libraries(obs-duckmuxpeg-plugin
     statmux_engine
     common_utils
+    modern_mpeg2_encoder
+    broadcast_compliance
+    obs_ui_components
     ${OBS_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )

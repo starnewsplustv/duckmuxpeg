@@ -33,6 +33,9 @@ include_directories(
 add_subdirectory(src/statmux)
 add_subdirectory(src/obs-plugin)
 add_subdirectory(src/common)
+add_subdirectory(src/encoder)
+add_subdirectory(src/broadcast)
+add_subdirectory(src/obs-ui)
 
 # Create main executable
 add_executable(duckmuxpeg src/main.cpp)
@@ -40,6 +43,9 @@ add_executable(duckmuxpeg src/main.cpp)
 target_link_libraries(duckmuxpeg
     statmux_engine
     common_utils
+    modern_mpeg2_encoder
+    broadcast_compliance
+    obs_ui_components
     ${LIBAV_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
