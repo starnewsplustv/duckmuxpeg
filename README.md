@@ -84,6 +84,10 @@ git clone <repository-url>
 cd duckmuxpeg
 chmod +x build.sh
 ./build.sh
+
+# One-line build & install
+chmod +x install.sh
+sudo ./install.sh /usr/local
 ```
 
 ### 2. Basic Usage
@@ -93,6 +97,9 @@ chmod +x build.sh
 
 # Run with custom configuration
 ./build/duckmuxpeg config/broadcast.conf
+
+# Launch the compliance dashboard (prints rich TUI output)
+./build/duckmuxpeg --dashboard
 
 # Create ramdrive for high-performance buffering
 sudo ./create-ramdrive.sh 4G /tmp/duckmuxpeg-buffer
@@ -447,6 +454,9 @@ cd build && make test
 
 # Code formatting
 make format
+
+# Generate the broadcast dashboard without starting OBS
+./build/duckmuxpeg --dashboard
 ```
 
 ## 📄 License
