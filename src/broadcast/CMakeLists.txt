@@ -1,5 +1,6 @@
 add_library(broadcast_compliance STATIC
     ATSCCompliance.cpp
+    TSDuckIntegration.cpp
     PSIPTables.cpp
     TransportStreamValidator.cpp
     ClosedCaptioning.cpp
