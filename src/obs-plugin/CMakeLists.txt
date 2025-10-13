@@ -8,6 +8,7 @@ add_library(obs-duckmuxpeg-plugin SHARED
 target_include_directories(obs-duckmuxpeg-plugin PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src/common
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/statmux
 )
 

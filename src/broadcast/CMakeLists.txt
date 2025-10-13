@@ -5,6 +5,7 @@ add_library(broadcast_compliance STATIC
 target_include_directories(broadcast_compliance PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src/common
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 target_link_libraries(broadcast_compliance

@@ -26,6 +26,27 @@ struct Data {
 };
 } // namespace obs_stub
 
+class ComplianceMonitorWidget {
+public:
+    void update(const ComplianceStats& stats);
+    std::string render() const;
+
+private:
+    ComplianceStats m_stats{};
+};
+
+class ChannelManagerWidget {
+public:
+    void set_channels(const std::vector<VirtualChannelConfig>& channels);
+    bool add_channel(const VirtualChannelConfig& channel);
+    bool remove_channel(uint16_t major, uint16_t minor);
+    std::vector<VirtualChannelConfig> channels() const;
+    std::string render() const;
+
+private:
+    std::vector<VirtualChannelConfig> m_channels;
+};
+
 class BroadcastComplianceUI {
 public:
     BroadcastComplianceUI();
@@ -64,25 +85,4 @@ private:
     void refresh_from_backend();
     std::string render_channels() const;
     std::string render_events() const;
-};
-
-class ComplianceMonitorWidget {
-public:
-    void update(const ComplianceStats& stats);
-    std::string render() const;
-
-private:
-    ComplianceStats m_stats{};
-};
-
-class ChannelManagerWidget {
-public:
-    void set_channels(const std::vector<VirtualChannelConfig>& channels);
-    bool add_channel(const VirtualChannelConfig& channel);
-    bool remove_channel(uint16_t major, uint16_t minor);
-    std::vector<VirtualChannelConfig> channels() const;
-    std::string render() const;
-
-private:
-    std::vector<VirtualChannelConfig> m_channels;
 };

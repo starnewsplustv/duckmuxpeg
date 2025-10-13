@@ -18,6 +18,19 @@ enum class ATSCStandard {
     ATSC_3_0
 };
 
+enum class VideoFormat {
+    HDTV_720p,
+    HDTV_1080i,
+    HDTV_1080p,
+    SDTV_480i,
+    SDTV_480p
+};
+
+enum class AspectRatio {
+    AR_4_3,
+    AR_16_9
+};
+
 struct VirtualChannelConfig {
     uint16_t major_channel = 1;
     uint16_t minor_channel = 1;
