@@ -48,11 +48,14 @@ check_dependencies() {
     command -v pkg-config >/dev/null 2>&1 || missing_deps+=("pkg-config")
     
     # Check for FFmpeg development libraries
-    pkg-config --exists libavcodec libavformat libavutil libswscale libswresample 2>/dev/null || {
-        echo -e "${RED}FFmpeg development libraries not found!${NC}"
-        echo "Install with: sudo apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
-        missing_deps+=("ffmpeg-dev")
-    }
+    if pkg-config --exists libavcodec libavformat libavutil libswscale libswresample 2>/dev/null; then
+        echo -e "${GREEN}✓ FFmpeg development libraries found${NC}"
+        FFMPEG_SUPPORT=1
+    else
+        echo -e "${YELLOW}! FFmpeg development libraries not found (optional)${NC}"
+        echo "  Install with: sudo apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+        FFMPEG_SUPPORT=0
+    fi
     
     # Check for threading support
     echo '#include <thread>' | g++ -x c++ -c - -o /dev/null 2>/dev/null || {

@@ -10,6 +10,7 @@
 #include <sys/sysinfo.h>
 #include <ifaddrs.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 
 namespace Utils {

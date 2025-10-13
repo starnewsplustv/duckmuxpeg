@@ -69,12 +69,18 @@ A next-generation MPEG-2 encoder with x264-inspired optimizations, deep OBS Stud
 # Ubuntu/Debian
 sudo apt update
 sudo apt install build-essential cmake pkg-config
-sudo apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev
-sudo apt install libnuma-dev libx264-dev  # Optional but recommended
 
-# For OBS integration
-sudo apt install obs-studio-dev  # If available, or build OBS from source
+# Optional: enable libav/FFmpeg-backed helpers
+sudo apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev
+
+# Optional: additional integrations
+sudo apt install libnuma-dev libx264-dev obs-studio-dev
 ```
+
+> **Note:** The build system now falls back to stub implementations when the FFmpeg
+> development packages are missing. You can still configure and compile the
+> project inside a minimal environment, but advanced multiplexing helpers that
+> depend on libav will be disabled until the optional packages are installed.
 
 ### Optional Dependencies
 - **NUMA support**: `libnuma-dev` for NUMA-aware optimizations
@@ -90,6 +96,10 @@ git clone <repository-url>
 cd duckmuxpeg
 chmod +x build.sh
 ./build.sh
+
+# One-line build & install
+chmod +x install.sh
+sudo ./install.sh /usr/local
 ```
 
 ### 2. Basic Usage
@@ -99,6 +109,9 @@ chmod +x build.sh
 
 # Run with custom configuration
 ./build/duckmuxpeg config/broadcast.conf
+
+# Launch the compliance dashboard (prints rich TUI output)
+./build/duckmuxpeg --dashboard
 
 # Create ramdrive for high-performance buffering
 sudo ./create-ramdrive.sh 4G /tmp/duckmuxpeg-buffer
@@ -453,6 +466,9 @@ cd build && make test
 
 # Code formatting
 make format
+
+# Generate the broadcast dashboard without starting OBS
+./build/duckmuxpeg --dashboard
 ```
 
 ## 📄 License
