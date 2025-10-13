@@ -9,6 +9,8 @@
 #include <chrono>
 #include <queue>
 #include <functional>
+#include <map>
+#include <optional>
 
 #include "common/Config.h"
 #include "common/Logger.h"
@@ -19,6 +21,10 @@
 #include "StreamProcessor.h"
 #include "QualityAnalyzer.h"
 #include "TransportStream.h"
+#include "PlaylistManager.h"
+#include "TrafficAccountant.h"
+#include "LiveSourceScheduler.h"
+#include "PlatformManager.h"
 
 struct StreamStats {
     std::string streamId;
@@ -129,7 +135,11 @@ private:
     void handleStreamEvent(const std::string& event, const std::string& streamId);
     void optimizeBitrates();
     bool validateConfiguration() const;
-    
+    void managePlayout();
+    std::string activateStreamBySource(const std::string& sourceUrl);
+    void pauseOtherStreams(const std::string& activeStreamId);
+    void updateMultiPlatformOutputs();
+
     // Stream management internals
     struct StreamContext {
         std::string id;
@@ -158,11 +168,22 @@ private:
     
     std::vector<std::unique_ptr<OutputContext>> m_outputContexts;
     std::mutex m_outputMutex;
-    
+
     // Performance monitoring
     std::chrono::high_resolution_clock::time_point m_lastOptimization;
     std::chrono::milliseconds m_optimizationInterval;
-    
+
+    // Advanced playout components
+    std::unique_ptr<PlaylistManager> m_playlistManager;
+    std::unique_ptr<TrafficAccountant> m_trafficAccountant;
+    std::unique_ptr<LiveSourceScheduler> m_liveScheduler;
+    std::unique_ptr<PlatformManager> m_platformManager;
+    std::optional<PlaylistRuntimeItem> m_activePlaylistItem;
+    std::optional<LiveSlotState> m_activeLiveSlot;
+    std::chrono::system_clock::time_point m_activeItemStart;
+    bool m_multiPlatformSynchronized;
+    std::map<std::string, std::string> m_platformOutputMap;
+
     // Resource management
     void cleanup();
     bool allocateResources();
