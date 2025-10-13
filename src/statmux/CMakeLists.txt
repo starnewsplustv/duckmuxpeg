@@ -6,6 +6,10 @@ add_library(statmux_engine STATIC
     StreamProcessor.cpp
     QualityAnalyzer.cpp
     TransportStream.cpp
+    PlaylistManager.cpp
+    TrafficAccountant.cpp
+    LiveSourceScheduler.cpp
+    PlatformManager.cpp
 )
 
 target_include_directories(statmux_engine PUBLIC

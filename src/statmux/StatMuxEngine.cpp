@@ -2,6 +2,7 @@
 #include "common/Utils.h"
 #include <algorithm>
 #include <numeric>
+#include <set>
 
 StatMuxEngine::StatMuxEngine(const Config& config)
     : m_config(config)
@@ -10,6 +11,8 @@ StatMuxEngine::StatMuxEngine(const Config& config)
     , m_initialized(false)
     , m_statisticsEnabled(true)
     , m_optimizationInterval(std::chrono::milliseconds(m_statmuxConfig.update_interval_ms))
+    , m_activeItemStart(std::chrono::system_clock::now())
+    , m_multiPlatformSynchronized(false)
 {
     Logger::info("StatMux Engine created with " + std::to_string(m_statmuxConfig.max_concurrent_streams) + " max streams");
     
@@ -65,7 +68,14 @@ bool StatMuxEngine::initialize() {
             Logger::error("Failed to allocate resources");
             return false;
         }
-        
+
+        m_playlistManager = std::make_unique<PlaylistManager>(m_config.getPlaylistConfig());
+        m_trafficAccountant = std::make_unique<TrafficAccountant>(m_config.getTrafficAccountingConfig());
+        m_liveScheduler = std::make_unique<LiveSourceScheduler>(m_config.getLiveSchedulingConfig());
+        m_platformManager = std::make_unique<PlatformManager>(m_config.getMultiPlatformConfig());
+        m_multiPlatformSynchronized = m_config.getMultiPlatformConfig().sync_playlists;
+        m_platformOutputMap.clear();
+
         m_initialized = true;
         Logger::info("StatMux Engine initialized successfully");
         return true;
@@ -123,7 +133,9 @@ bool StatMuxEngine::start() {
         for (const auto& output : m_config.getOutputs()) {
             addOutputStream(output);
         }
-        
+
+        updateMultiPlatformOutputs();
+
         Logger::info("StatMux Engine started successfully");
         return true;
         
@@ -167,12 +179,16 @@ bool StatMuxEngine::stop() {
         std::lock_guard<std::mutex> lock(m_streamMutex);
         m_streamContexts.clear();
     }
-    
+
     {
         std::lock_guard<std::mutex> lock(m_outputMutex);
         m_outputContexts.clear();
     }
-    
+
+    m_activePlaylistItem.reset();
+    m_activeLiveSlot.reset();
+    m_platformOutputMap.clear();
+
     Logger::info("StatMux Engine stopped");
     return true;
 }
@@ -411,7 +427,9 @@ void StatMuxEngine::mainLoop() {
     while (m_running) {
         try {
             auto now = std::chrono::high_resolution_clock::now();
-            
+
+            managePlayout();
+
             // Process input frames
             {
                 std::lock_guard<std::mutex> lock(m_streamMutex);
@@ -537,9 +555,9 @@ void StatMuxEngine::handleStreamEvent(const std::string& event, const std::strin
 
 void StatMuxEngine::optimizeBitrates() {
     std::lock_guard<std::mutex> lock(m_streamMutex);
-    
+
     if (m_streamContexts.empty()) return;
-    
+
     // Calculate total available bitrate
     int totalTargetBitrate = 0;
     for (const auto& context : m_streamContexts) {
@@ -571,6 +589,212 @@ void StatMuxEngine::optimizeBitrates() {
                 context->currentBitrate = newBitrate;
                 Logger::debug("Optimized bitrate for stream " + context->id + " to " + std::to_string(newBitrate) + " kbps");
             }
+        }
+    }
+}
+
+void StatMuxEngine::managePlayout() {
+    auto now = std::chrono::system_clock::now();
+
+    bool liveActive = false;
+    if (m_liveScheduler) {
+        if (auto liveSlotOpt = m_liveScheduler->getActiveSlot(now)) {
+            auto liveSlot = *liveSlotOpt;
+            bool isNewSlot = !m_activeLiveSlot || m_activeLiveSlot->config.id != liveSlot.config.id;
+            bool activated = !isNewSlot;
+
+            if (isNewSlot) {
+                if (m_activePlaylistItem && m_playlistManager) {
+                    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_activeItemStart);
+                    if (m_trafficAccountant) {
+                        m_trafficAccountant->recordPlayout(m_activePlaylistItem->config, elapsed, m_activeItemStart);
+                    }
+                    m_playlistManager->markItemCompleted(m_activePlaylistItem->config.id, elapsed);
+                    handleStreamEvent("playlist_item_interrupted", m_activePlaylistItem->config.id);
+                    m_activePlaylistItem.reset();
+                }
+
+                auto streamId = activateStreamBySource(liveSlot.config.source);
+                if (!streamId.empty()) {
+                    pauseOtherStreams(streamId);
+                    m_liveScheduler->markSlotStarted(liveSlot.config.id, now);
+                    handleStreamEvent("live_slot_started", liveSlot.config.id);
+                    activated = true;
+                } else {
+                    Logger::warn("Unable to activate live source for slot " + liveSlot.config.id +
+                                 " source=" + liveSlot.config.source);
+                }
+            }
+
+            if (activated) {
+                liveActive = true;
+                m_activeLiveSlot = liveSlot;
+            }
+        } else if (m_activeLiveSlot) {
+            m_liveScheduler->markSlotCompleted(m_activeLiveSlot->config.id);
+            handleStreamEvent("live_slot_completed", m_activeLiveSlot->config.id);
+            m_activeLiveSlot.reset();
+        }
+    }
+
+    if (liveActive) {
+        return;
+    }
+
+    if (!m_playlistManager) {
+        return;
+    }
+
+    if (m_activePlaylistItem) {
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_activeItemStart);
+        auto expected = std::chrono::seconds(std::max(0, m_activePlaylistItem->config.expected_duration_sec));
+        if (expected.count() > 0 && elapsed >= expected) {
+            if (m_trafficAccountant) {
+                m_trafficAccountant->recordPlayout(m_activePlaylistItem->config, elapsed, m_activeItemStart);
+            }
+            m_playlistManager->markItemCompleted(m_activePlaylistItem->config.id, elapsed);
+            handleStreamEvent("playlist_item_completed", m_activePlaylistItem->config.id);
+            m_activePlaylistItem.reset();
+        }
+    }
+
+    if (!m_activePlaylistItem) {
+        auto nextItem = m_playlistManager->getNextItem(now);
+        if (nextItem) {
+            auto streamId = activateStreamBySource(nextItem->config.source);
+            if (!streamId.empty()) {
+                pauseOtherStreams(streamId);
+                m_activePlaylistItem = nextItem;
+                m_activeItemStart = now;
+                handleStreamEvent("playlist_item_started", nextItem->config.id);
+                if (m_multiPlatformSynchronized) {
+                    updateMultiPlatformOutputs();
+                }
+            } else {
+                Logger::warn("Playlist item could not start, missing stream for source " + nextItem->config.source);
+            }
+        }
+    }
+}
+
+std::string StatMuxEngine::activateStreamBySource(const std::string& sourceUrl) {
+    if (sourceUrl.empty()) {
+        return {};
+    }
+
+    std::string streamId;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        for (auto& context : m_streamContexts) {
+            if (context->inputConfig.url == sourceUrl) {
+                context->active = true;
+                context->paused = false;
+                context->lastFrameTime = std::chrono::high_resolution_clock::now();
+                streamId = context->id;
+                break;
+            }
+        }
+    }
+
+    if (!streamId.empty() && m_inputHandler) {
+        m_inputHandler->resumeInput(streamId);
+    }
+
+    return streamId;
+}
+
+void StatMuxEngine::pauseOtherStreams(const std::string& activeStreamId) {
+    std::vector<std::string> toPause;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        for (auto& context : m_streamContexts) {
+            if (context->id == activeStreamId) {
+                context->paused = false;
+                context->active = true;
+            } else if (!context->paused) {
+                context->paused = true;
+                toPause.push_back(context->id);
+            }
+        }
+    }
+
+    for (const auto& id : toPause) {
+        if (m_inputHandler) {
+            m_inputHandler->pauseInput(id);
+        }
+    }
+}
+
+void StatMuxEngine::updateMultiPlatformOutputs() {
+    if (!m_platformManager) {
+        return;
+    }
+
+    auto activePlatforms = m_platformManager->getActivePlatforms();
+    std::set<std::string> activeIds;
+
+    for (const auto& platform : activePlatforms) {
+        activeIds.insert(platform.config.id);
+        auto mappingIt = m_platformOutputMap.find(platform.config.id);
+
+        bool needsUpdate = false;
+        if (mappingIt != m_platformOutputMap.end()) {
+            const auto& mappedId = mappingIt->second;
+            std::lock_guard<std::mutex> lock(m_outputMutex);
+            auto ctxIt = std::find_if(m_outputContexts.begin(), m_outputContexts.end(),
+                                      [&mappedId](const auto& ctx) { return ctx->id == mappedId; });
+            if (ctxIt == m_outputContexts.end()) {
+                needsUpdate = true;
+            } else {
+                const auto& existing = (*ctxIt)->config;
+                if (existing.url != platform.config.output.url ||
+                    existing.type != platform.config.output.type ||
+                    existing.mux_format != platform.config.output.mux_format ||
+                    existing.bitrate != platform.config.output.bitrate) {
+                    needsUpdate = true;
+                }
+            }
+        } else {
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            if (mappingIt != m_platformOutputMap.end()) {
+                removeOutputStream(mappingIt->second);
+                m_platformOutputMap.erase(mappingIt);
+            }
+
+            if (addOutputStream(platform.config.output)) {
+                std::string newId;
+                {
+                    std::lock_guard<std::mutex> lock(m_outputMutex);
+                    if (!m_outputContexts.empty()) {
+                        newId = m_outputContexts.back()->id;
+                    }
+                }
+                if (!newId.empty()) {
+                    m_platformOutputMap[platform.config.id] = newId;
+                    Logger::info("Configured platform output " + platform.config.id + " as " + newId);
+                }
+            }
+        }
+
+        m_platformManager->setPlatformActive(platform.config.id, true);
+    }
+
+    if (m_multiPlatformSynchronized) {
+        std::vector<std::string> toRemove;
+        for (const auto& entry : m_platformOutputMap) {
+            if (activeIds.find(entry.first) == activeIds.end()) {
+                toRemove.push_back(entry.first);
+            }
+        }
+
+        for (const auto& platformId : toRemove) {
+            auto outputId = m_platformOutputMap[platformId];
+            removeOutputStream(outputId);
+            m_platformOutputMap.erase(platformId);
+            m_platformManager->setPlatformActive(platformId, false);
         }
     }
 }

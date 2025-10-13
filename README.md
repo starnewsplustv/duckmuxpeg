@@ -43,6 +43,12 @@ A next-generation MPEG-2 encoder with x264-inspired optimizations, deep OBS Stud
 - **Performance statistics** display
 - **Scene-aware** bitrate adaptation
 
+### Playout & Distribution
+- **Playlist-driven playout** with rotation strategies and metadata-aware scheduling
+- **Integrated traffic accounting** with automated reconciliation and reporting
+- **Live source scheduler** for recurring studio hits and pop-up events
+- **Multi-platform output orchestration** with synchronized playlist state across ATSC, OTT and FAST endpoints
+
 ### Statistical Multiplexing
 - **Adaptive bitrate allocation** based on content complexity
 - **Lookahead-driven** rate control
