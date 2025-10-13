@@ -54,6 +54,7 @@ check_dependencies() {
     else
         echo -e "${YELLOW}! FFmpeg development libraries not found (optional)${NC}"
         echo "  Install with: sudo apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+        echo "  Or vendor locally with: ./scripts/pull-libav.sh"
         FFMPEG_SUPPORT=0
     fi
     

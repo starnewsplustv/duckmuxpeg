@@ -150,3 +150,44 @@ This document tracks the shell commands executed while working on this task.
 146. `git add COMMANDS.md`
 147. `git commit --amend --no-edit`
 148. `git status -sb`
+149. `sed -n '1,200p' CMakeLists.txt`
+150. `sed -n '1,200p' build.sh`
+151. `sed -n '200,400p' build.sh`
+152. `sed -n '1,200p' install.sh`
+153. `sed -n '1,40p' COMMANDS.md`
+154. `ls src`
+155. `sed -n '1,160p' src/encoder/ModernMPEG2Encoder.cpp`
+156. `sed -n '1,200p' README.md`
+157. `ls -a`
+158. `mkdir -p scripts`
+159. `cat <<'EOF' > scripts/pull-libav.sh`
+160. `sed -n '1,200p' scripts/pull-libav.sh`
+161. `python - <<'PY'`
+162. `sed -n '1,200p' scripts/pull-libav.sh`
+163. `chmod +x scripts/pull-libav.sh`
+164. `cat <<'EOF' > .gitignore`
+165. `apply_patch <<'PATCH'` (CMake vendored pkg-config)
+166. `apply_patch <<'PATCH'` (CMake vendored flag)
+167. `apply_patch <<'PATCH'` (CMake vendored message)
+168. `apply_patch <<'PATCH'` (README vendored workflow)
+169. `apply_patch <<'PATCH'` (build.sh libav hint)
+170. `cmake -S . -B build`
+171. `cmake --build build`
+172. `cat <<'EOF' > .gitignore`
+173. `rm -rf build`
+174. `apply_patch <<'PATCH'` (pull-libav update)
+175. `sed -n '40,120p' scripts/pull-libav.sh`
+176. `rg "Vendoring" -n README.md`
+177. `sed -n '70,120p' README.md`
+178. `git status -sb`
+179. `ls scripts`
+180. `cat .gitignore`
+181. `sed -n '1,120p' CMakeLists.txt`
+182. `git status -sb`
+183. `apply_patch <<'PATCH'` (pull-libav cleanup)
+184. `git status -sb`
+185. `git diff --cached scripts/pull-libav.sh`
+186. `git diff --cached`
+187. `git commit -m "Add libav vendoring helper and detection"`
+188. `git commit --amend --no-edit`
+189. `git commit --amend --no-edit`

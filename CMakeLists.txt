@@ -4,6 +4,29 @@ project(duckmuxpeg VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(_libav_vendored OFF)
+set(_local_libav_prefix "${CMAKE_SOURCE_DIR}/third_party/libav/root/usr")
+if(EXISTS "${_local_libav_prefix}")
+    list(PREPEND CMAKE_PREFIX_PATH "${_local_libav_prefix}")
+    set(_libav_vendored ON)
+endif()
+
+set(_libav_pkgconfig_dirs
+    "${CMAKE_SOURCE_DIR}/third_party/libav/root/usr/lib/x86_64-linux-gnu/pkgconfig"
+    "${CMAKE_SOURCE_DIR}/third_party/libav/root/usr/lib/pkgconfig"
+    "${CMAKE_SOURCE_DIR}/third_party/libav/root/usr/share/pkgconfig"
+)
+
+foreach(_pkg_dir IN LISTS _libav_pkgconfig_dirs)
+    if(EXISTS "${_pkg_dir}")
+        if(DEFINED ENV{PKG_CONFIG_PATH} AND NOT "$ENV{PKG_CONFIG_PATH}" STREQUAL "")
+            set(ENV{PKG_CONFIG_PATH} "${_pkg_dir}:$ENV{PKG_CONFIG_PATH}")
+        else()
+            set(ENV{PKG_CONFIG_PATH} "${_pkg_dir}")
+        endif()
+    endif()
+endforeach()
+
 find_package(PkgConfig QUIET)
 find_package(Threads REQUIRED)
 
@@ -17,7 +40,11 @@ if(PkgConfig_FOUND)
         libswresample
     )
     if(LIBAV_FOUND)
-        message(STATUS "FFmpeg development libraries detected - enabling libav integration")
+        if(_libav_vendored)
+            message(STATUS "FFmpeg development libraries detected via third_party/libav")
+        else()
+            message(STATUS "FFmpeg development libraries detected - enabling libav integration")
+        endif()
     else()
         message(WARNING "FFmpeg development libraries not found - continuing without libav support")
         set(LIBAV_FOUND OFF)

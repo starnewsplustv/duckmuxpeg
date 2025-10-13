@@ -76,6 +76,25 @@ sudo apt install libnuma-dev libx264-dev obs-studio-dev
 > project inside a minimal environment, but advanced multiplexing helpers that
 > depend on libav will be disabled until the optional packages are installed.
 
+### Vendoring libav without root access
+
+If you cannot install system-wide packages (for example, inside a sandboxed
+CI environment), use the helper script to download and extract the Debian
+development packages into the repository:
+
+```bash
+./scripts/pull-libav.sh          # downloads and unpacks into third_party/libav
+
+# optional: skip apt-get update if the container disallows it
+./scripts/pull-libav.sh --no-update
+```
+
+After the script finishes, export the suggested environment variables (printed
+at the end of the run) so that `pkg-config` and the linker can locate the
+vendored FFmpeg libraries. The top-level CMake script automatically inspects
+`third_party/libav` and adjusts `PKG_CONFIG_PATH` and `CMAKE_PREFIX_PATH`
+during configuration.
+
 ### Optional Dependencies
 - **NUMA support**: `libnuma-dev` for NUMA-aware optimizations
 - **x264 library**: `libx264-dev` for reference implementation comparisons
