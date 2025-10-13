@@ -195,13 +195,13 @@ public:
     bool add_event(uint16_t source_id, const EventInformationTable::Event& event);
     bool update_system_time();
     bool configure_rating_region(uint8_t region);
-    
+
     // Validation
     bool validate_transport_stream(const std::vector<uint8_t>& ts_data);
     bool validate_video_compliance(int width, int height, double fps);
     bool validate_audio_compliance(int sample_rate, int channels);
     bool validate_psip_tables();
-    
+
     // Serialization
     std::vector<uint8_t> generate_pat(); // Program Association Table
     std::vector<uint8_t> generate_pmt(uint16_t program_number); // Program Map Table
@@ -210,6 +210,9 @@ public:
     std::vector<uint8_t> generate_eit(uint16_t source_id); // Event Information Table
     std::vector<uint8_t> generate_stt(); // System Time Table
     std::vector<uint8_t> generate_rrt(); // Rating Region Table
+
+    // Integration helpers
+    bool load_wmdv_lineup_from_tsduck();
     
     // Closed Captioning (CEA-608/CEA-708)
     bool configure_closed_captioning(bool enabled);
